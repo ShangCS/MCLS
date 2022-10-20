@@ -28,6 +28,6 @@ Using clinical data to do enrichment analysis.
 ## Preparations
 (1) Download and import the datasets.
 
-(2) Run ```Complete_data.R``` or ```Incomplete_data``` file.
+(2) Run ```Complete_data.R``` or ```Incomplete_data.R``` file.
 
 
