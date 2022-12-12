@@ -6,20 +6,19 @@ source("enrichment.R")
 assignInNamespace('specClust',specClust,ns='kknn')
 environment(specClust) <- asNamespace('kknn')
 
-
-get_emb<-function(data,complete_names,all_names,dim,dim_pca,pca_scale=F){
+get_emb<-function(data,complete_names,incomplete_names,all_names,dim=6,dim_pca=3,pca_scale=F){
   print("This time is for incomplete data (For clustering).",quote=FALSE)
   mRNA_pca<-prcomp(t(data[["mRNA"]]), center=pca_scale, scale=pca_scale)
   Methy_pca<-prcomp(t(data[["Methy"]]), center=pca_scale, scale=pca_scale)
   miRNA_pca<-prcomp(t(data[["miRNA"]]), center=pca_scale, scale=pca_scale)
   
-  complete_mRNA_pca <- mRNA_pca$x[1:length(complete_names),1:dim_pca]
-  complete_Methy_pca <- Methy_pca$x[1:length(complete_names),1:dim_pca]
-  complete_miRNA_pca <- miRNA_pca$x[1:length(complete_names),1:dim_pca]
+  complete_mRNA_pca <- mRNA_pca$x[complete_names,c(1:dim_pca)]
+  complete_Methy_pca <- Methy_pca$x[complete_names,c(1:dim_pca)]
+  complete_miRNA_pca <- miRNA_pca$x[complete_names,c(1:dim_pca)]
   
-  #incomplete_mRNA_pca <- mRNA_pca$x[(length(complete_names)+1):length(all_names),1:dim_pca]
-  incomplete_Methy_pca <- Methy_pca$x[(length(complete_names)+1):length(all_names),1:dim_pca]
-  incomplete_miRNA_pca <- miRNA_pca$x[(length(complete_names)+1):length(all_names),1:dim_pca]
+  #incomplete_mRNA_pca <- mRNA_pca$x[incomplete_names,c(1:dim_pca)]
+  incomplete_Methy_pca <- Methy_pca$x[incomplete_names,c(1:dim_pca)]
+  incomplete_miRNA_pca <- miRNA_pca$x[incomplete_names,c(1:dim_pca)]
 
   completed_data_pca<-cbind(complete_mRNA_pca,complete_Methy_pca,complete_miRNA_pca)
   complete_data_svd<-svd(completed_data_pca)
@@ -68,22 +67,26 @@ v2<- read.table(file2_name, header = T, sep = "\t", row.names = 1)
 v3<- read.table(file3_name, header = T, sep = "\t", row.names = 1)
 
 all_names <- names(v1)
-complete_names <- list()
-incomplete_names <- list()
+complete_names <- c()
+incomplete_names <- c()
+
+v1_colsum <- colSums(v1)
+v2_colsum <- colSums(v2)
+v3_colsum <- colSums(v3)
 
 for(i in seq(1, length(all_names))){
-  if (v1[1,i] == 0){
-    incomplete_names[as.character(i)] <- all_names[i]
+  if ((v1_colsum[i] != 0) & (v2_colsum[i] != 0) & (v3_colsum[i] != 0)){
+    complete_names[as.character(i)] <- all_names[i]
   }
   else{
-    complete_names[as.character(i)] <- all_names[i]
+    incomplete_names[as.character(i)] <- all_names[i]
   }
 }
 
 data<-list(mRNA=v1,Methy=v2,miRNA=v3)
 
 #survive analyze
-emb <- get_emb(data,complete_names,all_names,dim=4,dim_pca=15,pca_scale=F)
+emb <- get_emb(data,complete_names,incomplete_names,all_names,dim=4,dim_pca=15,pca_scale=F)
 cl_s <- specClust(emb, 5, nn=20)
 labels <- cl_s$cluster
 names(labels) <- names(v1)
